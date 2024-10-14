@@ -26,14 +26,13 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -48,5 +47,92 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Playfair_144pt-Black.ttf</string>
+		<string>Playfair_144pt-BlackItalic.ttf</string>
+		<string>Playfair_144pt-Bold.ttf</string>
+		<string>Playfair_144pt-BoldItalic.ttf</string>
+		<string>Playfair_144pt-ExtraBold.ttf</string>
+		<string>Playfair_144pt-ExtraBoldItalic.ttf</string>
+		<string>Playfair_144pt-Italic.ttf</string>
+		<string>Playfair_144pt-Light.ttf</string>
+		<string>Playfair_144pt-LightItalic.ttf</string>
+		<string>Playfair_144pt-Medium.ttf</string>
+		<string>Playfair_144pt-MediumItalic.ttf</string>
+		<string>Playfair_144pt-Regular.ttf</string>
+		<string>Playfair_144pt-SemiBold.ttf</string>
+		<string>Playfair_144pt-SemiBoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Black.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-BlackItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Bold.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-BoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-ExtraBold.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-ExtraBoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Italic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Light.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-LightItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Medium.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-MediumItalic.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-Regular.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-SemiBold.ttf</string>
+		<string>Playfair_144pt_SemiCondensed-SemiBoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Black.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-BlackItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Bold.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-BoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-ExtraBold.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-ExtraBoldItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Italic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Light.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-LightItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Medium.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-MediumItalic.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-Regular.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-SemiBold.ttf</string>
+		<string>Playfair_144pt_SemiExpanded-SemiBoldItalic.ttf</string>
+		<string>Playfair_9pt-Black.ttf</string>
+		<string>Playfair_9pt-BlackItalic.ttf</string>
+		<string>Playfair_9pt-Bold.ttf</string>
+		<string>Playfair_9pt-BoldItalic.ttf</string>
+		<string>Playfair_9pt-ExtraBold.ttf</string>
+		<string>Playfair_9pt-ExtraBoldItalic.ttf</string>
+		<string>Playfair_9pt-Italic.ttf</string>
+		<string>Playfair_9pt-Light.ttf</string>
+		<string>Playfair_9pt-LightItalic.ttf</string>
+		<string>Playfair_9pt-Medium.ttf</string>
+		<string>Playfair_9pt-MediumItalic.ttf</string>
+		<string>Playfair_9pt-Regular.ttf</string>
+		<string>Playfair_9pt-SemiBold.ttf</string>
+		<string>Playfair_9pt-SemiBoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Black.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-BlackItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Bold.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-BoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-ExtraBold.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-ExtraBoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Italic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Light.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-LightItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Medium.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-MediumItalic.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-Regular.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-SemiBold.ttf</string>
+		<string>Playfair_9pt_SemiCondensed-SemiBoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Black.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-BlackItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Bold.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-BoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-ExtraBold.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-ExtraBoldItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Italic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Light.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-LightItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Medium.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-MediumItalic.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-Regular.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-SemiBold.ttf</string>
+		<string>Playfair_9pt_SemiExpanded-SemiBoldItalic.ttf</string>
+	</array>
 </dict>
 </plist>
