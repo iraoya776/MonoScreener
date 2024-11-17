@@ -419,7 +419,7 @@ export function Home() {
                       styles.welcomeText,
                       {fontSize: 20, fontFamily: Themes.fonts.medium},
                     ]}>
-                    {loading ? 'Fetching' : username || 'User'}!
+                    {loading ? 'Fetching' : username}!
                   </Text>
                 </View>
 
