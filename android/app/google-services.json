@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1039780200202",
+    "project_id": "monoscreener-dc564",
+    "storage_bucket": "monoscreener-dc564.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1039780200202:android:849c0c8d111141a60d04f3",
+        "android_client_info": {
+          "package_name": "com.esthered.monoscreener"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHvh08nbxCsP0Qw-DCpasA7s-9gLtznaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

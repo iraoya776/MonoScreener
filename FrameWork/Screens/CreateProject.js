@@ -24,26 +24,8 @@ const CreateProject = () => {
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
 
-  // async function updateRoom() {
-  //   const {data, error} = await supabase.from('projects_info').upsert({
-  //     topic: projectTitle,
-  //     description: projectDescription,
-  //     updated_at: new Date().toLocaleString(),
-  //     creators: supabase.raw('array_append(creators, ?)', [userInfo.full_name]),
-  //     admin: userInfo.full_name,
-  //     content: null,
-  //     comments_length: 0,
-  //     creators_id: supabase.raw('array_append(creators_id, ?)', [userUID]),
-  //   });
-  //   if (error) {
-  //     console.log(error);
-  //   } else {
-  //     console.log('successful');
-  //     navigate('/Editor');
-  //   }
-  // }
-
   async function updateRoom() {
+    setPreloader(true);
     const {data, error} = await supabase.from('projects_info').upsert({
       topic: projectTitle,
       description: projectDescription,
@@ -54,112 +36,37 @@ const CreateProject = () => {
       comments_length: 0,
       creators_id: [userUID], // Start the array with the new creator ID
       creators_avatar: [userInfo.avatar_url],
+      creator_id: userUID,
     });
-
     if (error) {
+      setPreloader(false);
       console.log(error);
     } else {
-      console.log('successful');
-      //navigate('/Editor');
+      setPreloader(false);
+      ///console.log('successful');
+      navigate('/Editor');
     }
   }
 
-  async function update_ops() {
-    try {
-      // Check if the project already exists
-      setPreloader(true);
-      const {data: existingProject, error: fetchError} = await supabase
-        .from('project_ops')
-        .select()
-        .eq('project_title', projectTitle)
-        .single();
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.log('Error fetching project:', fetchError);
-        return;
-      }
-      if (existingProject) {
-        setPreloader(true);
-        // Update existing project with new participants
-        const {data, error} = await supabase
-          .from('project_ops')
-          .update({
-            participants_id: supabase.raw('array_append(participants_id, ?)', [
-              userUID,
-            ]),
-            participants: supabase.raw('array_append(participants, ?)', [
-              userInfo.full_name,
-            ]),
-            participants_avatar: supabase.raw(
-              'array_append(participants_avatar, ?)',
-              [userInfo.avatar_url],
-            ),
-          })
-          .eq('project_title', projectTitle);
-        if (error) {
-          console.log('Error updating project:', error);
-        } else {
-          console.log('Project updated successfully');
-          navigate('/Editor');
-        }
-      } else {
-        // Insert a new project
-        setPreloader(false);
-        const {data, error} = await supabase.from('project_ops').insert({
-          project_title: projectTitle,
-          participants_id: [userUID],
-          participants: [userInfo.full_name],
-          participants_avatar: [userInfo.avatar_url],
-          creator_avatar: userInfo.avatar_url,
-          creator: userInfo.full_name,
-          started_at: new Date().toLocaleString(),
-          created_at: new Date().toLocaleString(),
-        });
-        if (error) {
-          console.log('Error creating project:', error);
-        } else {
-          console.log('Project created successfully');
-          navigate('/Editor');
-        }
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
-    }
-  }
-
-  // async function updateRoom() {
-  //   // Retrieve current room data first
-  //   const { data: currentData, error: fetchError } = await supabase
-  //     .from('projects_info')
-  //     .select('creators, creators_id')
-  //     .eq('admin', userInfo.full_name)
-  //     .single(); // assuming you're fetching a single record
-
-  //   if (fetchError) {
-  //     console.log(fetchError);
-  //     return;
-  //   }
-
-  //   // Append new values to the existing arrays
-  //   const updatedCreators = [...(currentData.creators || []), userInfo.full_name];
-  //   const updatedCreatorsId = [...(currentData.creators_id || []), userUID];
-
-  //   // Now upsert with the modified arrays
-  //   const { data, error } = await supabase.from('projects_info').upsert({
-  //     topic: projectTitle,
-  //     description: projectDescription,
-  //     updated_at: new Date().toLocaleString(),
-  //     creators: updatedCreators,
-  //     admin: userInfo.full_name,
-  //     content: null,
-  //     comments_length: 0,
-  //     creators_id: updatedCreatorsId,
+  // async function updateProject() {
+  //   setPreloader(true);
+  //   const {error, data} = await supabase.from('project_ops').upsert({
+  //     participants: [userInfo.full_name],
+  //     project_title: projectTitle,
+  //     participants_avatar: [userInfo.avatar_url],
+  //     creator: userInfo.full_name,
+  //     creator_avatar: userInfo.avatar_url,
+  //     participants_id: [userUID],
+  //     creator_id: userUID,
+  //     started_at: new Date().toLocaleString(),
   //   });
-
   //   if (error) {
+  //     setPreloader(false);
   //     console.log(error);
   //   } else {
+  //     setPreloader(false);
   //     console.log('successful');
-  //     navigate('/Editor');
+  //     //navigate('/Editor');
   //   }
   // }
 
@@ -195,7 +102,7 @@ const CreateProject = () => {
                   style={styles.input}
                   multiline={true}
                   numberOfLines={2}
-                  maxLength={300}
+                  maxLength={100}
                   placeholderTextColor={styles.input.placeholderTextColor}
                 />
               </View>
@@ -214,7 +121,7 @@ const CreateProject = () => {
                   onChangeText={setProjectDescription}
                   multiline={true}
                   numberOfLines={5}
-                  maxLength={300}
+                  maxLength={250}
                   style={[styles.input, styles.textArea]}
                   placeholderTextColor={styles.input.placeholderTextColor}
                 />
@@ -231,14 +138,14 @@ const CreateProject = () => {
                       fontFamily: Themes.fonts.medium,
                       fontSize: 15,
                     }}>
-                    300
+                    200
                   </Text>
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => {
                   updateRoom();
-                  update_ops();
+                  // updateProject();
                 }}
                 disabled={!projectTitle || !projectDescription}>
                 <LinearGradient

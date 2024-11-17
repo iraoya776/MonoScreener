@@ -4,26 +4,27 @@
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import React, {useEffect} from 'react';
-import {
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  useColorScheme,
-} from 'react-native';
+import React, {useContext, useEffect, useState, useRef} from 'react';
+import {SafeAreaView, StatusBar, BackHandler, AppState} from 'react-native';
 
-import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {
   NativeRouter,
   Route,
-  Link,
   Routes,
   useNavigate,
   useLocation,
 } from 'react-router-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {BackHandler} from 'react-native';
-import {LogLevel, OneSignal} from 'react-native-onesignal';
+import notifee, {
+  AndroidImportance,
+  EventType,
+  AndroidStyle,
+  AuthorizationStatus,
+} from '@notifee/react-native';
+import {supabase} from './FrameWork/Supabase/supabase';
+import {RootSiblingParent} from 'react-native-root-siblings';
+
+// Import your components
 import WelcomeScreen from './FrameWork/Screens/WelcomeScreen';
 import Login from './FrameWork/Screens/Login';
 import {Home} from './FrameWork/Screens/HomeScreen';
@@ -32,19 +33,22 @@ import Profile from './FrameWork/Screens/Profile';
 import {SignUp} from './FrameWork/Screens/SignUp';
 import AdvancedTextEditor from './FrameWork/Screens/Editor';
 import Comments from './FrameWork/Screens/Comments';
-import Notifications from './FrameWork/Screens/Notifications';
-import {AppProvider} from './FrameWork/Components/GlobalVariables';
+import {AppContext, AppProvider} from './FrameWork/Components/GlobalVariables';
 import {Themes} from './FrameWork/Components/Themes';
-import {AndroidColor} from '@notifee/react-native';
-import notifee, {
-  AndroidImportance,
-  EventType,
-  AndroidStyle,
-} from '@notifee/react-native';
+import SendRequest from './FrameWork/Screens/SendRequest';
+import NotificationService from './FrameWork/Components/Notifications';
+import {Preloader} from './FrameWork/Components/Preloader';
+import ConfirmationScreen from './FrameWork/Screens/Confirmation';
+import NotificationsScreen from './FrameWork/Screens/NotificationsScreen';
+import EditProfile from './FrameWork/Screens/EditProfile';
+import DraggableBox from './FrameWork/Screens/Responder';
 
 const MainApp = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const {userUID} = useContext(AppContext);
+  const [commentList, setCommentList] = useState([]);
+  const [commentCount, setCommentCount] = useState(0);
 
   useEffect(() => {
     const backAction = () => {
@@ -52,10 +56,9 @@ const MainApp = () => {
       if (exitScreens.includes(location.pathname)) {
         BackHandler.exitApp();
         return true;
-      } else {
-        navigate(-1);
-        return true;
       }
+      navigate(-1);
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -66,77 +69,46 @@ const MainApp = () => {
     return () => backHandler.remove();
   }, [navigate, location]);
 
-  // Handles when the app is in background
-  notifee.onBackgroundEvent(async ({type, detail}) => {
-    if (type === EventType.PRESS && detail.pressAction.id === 'default') {
-      navigate('/Editor'); // Navigate to the Editor screen
-    }
-  });
-
-  // Handles when the app is in foreground
-  notifee.onForegroundEvent(async ({type, detail}) => {
-    if (type === EventType.PRESS && detail.pressAction.id === 'default') {
-      navigate('/Editor'); // Navigate to the Editor screen
-    }
-  });
-
-  // Handles when the app was launched from a terminated state
-  useEffect(() => {
-    async function checkInitialNotification() {
-      const initialNotification = await notifee.getInitialNotification();
-      if (initialNotification?.pressAction?.id === 'default') {
-        navigate('/Editor'); // Navigate if the app was opened by this action
-      }
-    }
-    checkInitialNotification();
-  }, []);
+  // Notification event handlers
 
   return (
     <Routes>
       <Route path="/" element={<WelcomeScreen />} />
       <Route path="/Login" element={<Login />} />
+      <Route path="/SendRequest" element={<SendRequest />} />
       <Route path="/Home" element={<Home />} />
       <Route path="/Create" element={<CreateProject />} />
       <Route path="/Profile" element={<Profile />} />
       <Route path="/SignUp" element={<SignUp />} />
       <Route path="/Editor" element={<AdvancedTextEditor />} />
       <Route path="/Comments" element={<Comments />} />
-      <Route path="/Notifications" element={<Notifications />} />
+      <Route path="/Notifications" element={<NotificationsScreen />} />
+      <Route path="/Confirmation" element={<ConfirmationScreen />} />
+      <Route path="/EditProfile" element={<EditProfile />} />
+      <Route path="/Responder" element={<DraggableBox />} />
     </Routes>
   );
 };
 
 function App() {
-  // // Remove this method to stop OneSignal Debugging
-  // OneSignal.Debug.setLogLevel(LogLevel.Verbose);
-
-  // // OneSignal Initialization
-  // OneSignal.initialize('c36ab60d-9ec0-4943-903c-b96e3753cd51');
-
-  // // requestPermission will show the native iOS or Android notification permission prompt.
-  // // We recommend removing the following code and instead using an In-App Message to prompt for notification permission
-  // OneSignal.Notifications.requestPermission(true);
-
-  // // Method for listening for notification clicks
-  // OneSignal.Notifications.addEventListener('click', event => {
-  //   console.log('OneSignal: notification clicked:', event);
-  // });
-
   return (
-    <SafeAreaProvider>
-      <AppProvider>
-        <NativeRouter>
-          <SafeAreaView style={[{flex: 1}]}>
-            <StatusBar
-              barStyle="light-content"
-              backgroundColor={Themes.colors.red}
-            />
+    <RootSiblingParent>
+      <SafeAreaProvider>
+        <AppProvider>
+          <NativeRouter>
+            <SafeAreaView style={{flex: 1}}>
+              <StatusBar
+                barStyle="light-content"
+                backgroundColor={Themes.colors.red}
+              />
 
-            <MainApp />
-          </SafeAreaView>
-        </NativeRouter>
-      </AppProvider>
-    </SafeAreaProvider>
+              <MainApp />
+              <Preloader />
+            </SafeAreaView>
+          </NativeRouter>
+        </AppProvider>
+      </SafeAreaProvider>
+    </RootSiblingParent>
   );
 }
 

@@ -21,7 +21,7 @@ import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
 
 export default function Login() {
   const navigate = useNavigate();
-  const {userUID, setUserUID} = useContext(AppContext);
+  const {userUID, setUserUID, setPreloader} = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -73,6 +73,7 @@ export default function Login() {
   // }
 
   async function loginUser() {
+    setPreloader(true);
     try {
       const {data, error} = await supabase.auth.signInWithPassword({
         email,
@@ -81,17 +82,21 @@ export default function Login() {
 
       // Error handling
       if (error) {
+        setPreloader(false);
         throw new Error(error.message);
       }
 
-      // Ensure session exists
-      if (!data || !data.session) {
-        throw new Error('Unable to retrieve session. Please try again.');
-      }
+      // // Ensure session exists
+      // if (!data || !data.session) {
+      //   throw new Error('Unable to retrieve session. Please try again.');
+      // }
 
       // Set user UID and navigate to home
-      setUserUID(data.session.user.id);
-      navigate('/Home'); // Ensure this route exists
+      if (data) {
+        setPreloader(false);
+        setUserUID(data.session.user.id);
+        navigate('/Home'); // Ensure this route exists
+      }
     } catch (error) {
       // Display error message
       Alert.alert('Login Failed', error.message);

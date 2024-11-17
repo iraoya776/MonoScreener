@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,23 @@ import {
   StatusBar,
   Image,
   Dimensions,
+  Platform,
+  UIManager,
+  useAnimatedValue,
+  Animated,
 } from 'react-native';
 import {Themes} from '../Components/Themes';
 import {AppContext} from '../Components/GlobalVariables';
 import {supabase} from '../Supabase/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigate} from 'react-router-native';
-import Svg, {Path} from 'react-native-svg';
+import Svg, {Circle, Path} from 'react-native-svg';
 import CustomBottomNavigator from '../Components/CustomBottomTab';
 import CommentIcon from '../Components/CommentsIcon';
 import LinearGradient from 'react-native-linear-gradient';
 import LottieView from 'lottie-react-native';
-import {AndroidColor} from '@notifee/react-native';
-import notifee, {AndroidImportance} from '@notifee/react-native';
+import messaging from '@react-native-firebase/messaging';
+import {LayoutAnimation} from 'react-native';
 
 // SVG icons
 const SearchIcon = props => (
@@ -114,34 +118,41 @@ const NotificationIcon = props => (
   </Svg>
 );
 
-// async function onDisplayNotification() {
-//   // Request permissions (required for iOS)
-//   await notifee.requestPermission();
+const SvgView = Animated.createAnimatedComponent(Svg);
 
-//   // Create a channel (required for Android)
-//   const channelId = await notifee.createChannel({
-//     id: 'default',
-//     name: 'Default Channel',
-//     importance: AndroidImportance.HIGH, // Set importance for heads-up notifications
-//   });
+const SmileyIcon = () => {
+  return (
+    <SvgView height="30" width="30" viewBox="0 0 100 100">
+      {/* Outer Circle (Face) */}
+      <Circle
+        cx="50"
+        cy="50"
+        r="45"
+        stroke="gold"
+        strokeWidth="5"
+        fill="yellow"
+      />
 
-//   // Display a notification
-//   await notifee.displayNotification({
-//     title: 'Notification Title',
-//     body: 'Main body content of the notification',
-//     android: {
-//       channelId,
-//       smallIcon: 'ic_notification', // Optional, defaults to 'ic_launcher'
-//       pressAction: {
-//         id: 'default', // Set an action when notification is pressed
-//       },
-//     },
-//   });
-// }
+      {/* Left Eye */}
+      <Circle cx="35" cy="40" r="5" fill="black" />
+
+      {/* Right Eye */}
+      <Circle cx="65" cy="40" r="5" fill="black" />
+
+      {/* Mouth */}
+      <Path
+        d="M30 60 Q50 80 70 60"
+        stroke="black"
+        strokeWidth="3"
+        fill="none"
+      />
+    </SvgView>
+  );
+};
 
 export function Home() {
   const navigate = useNavigate();
-  const {userUID, setUserInfo, reload, preloader, setPreloader} =
+  const {userUID, setUserInfo, reload, preloader, setPreloader, setUserUID} =
     useContext(AppContext);
   const [avatar_url, setAvatar_url] = useState('');
   const [username, setUsername] = useState('');
@@ -170,7 +181,7 @@ export function Home() {
         // Fetch the user's profile from the "profiles" table
         const {data, error, status} = await supabase
           .from('profiles')
-          .select(`username, website, avatar_url, full_name`)
+          .select(`username, website, avatar_url, full_name, id`)
           .eq('id', session?.user.id)
           .single();
 
@@ -179,6 +190,7 @@ export function Home() {
         }
 
         if (data) {
+          setUserUID(session.user.id);
           setUserInfo(data); // Set the user information in context
           setAvatar_url(data.avatar_url);
           setUsername(data.username);
@@ -194,52 +206,18 @@ export function Home() {
   }, [userUID, reload]);
 
   const [myProjects, setMyProjects] = useState([]);
-  const [myFollowedProjects, setMyFollowedProjects] = useState([]);
-
-  useEffect(() => {
-    async function getFollowedProjects() {
-      try {
-        const {data, error} = await supabase
-          .from('projects_info')
-          .select(
-            `
-            topic, 
-            description, 
-            creators_id, 
-            content, 
-            updated_at, 
-            creators, 
-            creators_avatar, 
-            created_at, 
-            id, 
-            comments_length
-          `,
-          )
-          .not('creators_id', 'cs', `{${userUID}}`);
-
-        if (data) {
-          setMyFollowedProjects(data);
-        } else if (error) {
-          console.log(error);
-        }
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      }
-    }
-    getFollowedProjects();
-  }, [userUID, reload]);
+  // const [myFollowedProjects, setMyFollowedProjects] = useState([]);
 
   useEffect(() => {
     async function getProjects() {
       try {
         const {data, error, status} = await supabase
           .from('projects_info')
-          .select(
-            `topic, description, creators_id, content, updated_at, creators, creators_avatar, created_at, id, comments_length`,
-          )
+          .select(`*`)
           .contains('creators_id', [userUID]); // Use contains for array checking
         if (data) {
           setMyProjects(data);
+          setFilteredData(data);
         } else if (error) {
           console.log(error);
         }
@@ -250,219 +228,283 @@ export function Home() {
     getProjects();
   }, [userUID, reload]);
 
+  if (Platform.OS === 'android') {
+    if (UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }
+
+  const [isHeight, setIsHeight] = useState(false);
+
+  const [isAnimating, setIsAnimating] = useState(false);
+  const currentPosition = useAnimatedValue(300);
+
+  const changeDirection = () => {
+    if (isAnimating) return;
+
+    //currentPosition.setValue(100);
+    Animated.timing(currentPosition, {
+      toValue: 130,
+      useNativeDriver: false,
+      duration: 1000,
+    }).start(() => {
+      //setPreloader(true);
+    });
+
+    setIsAnimating(true);
+    const customAnimation = {
+      duration: 1000,
+      create: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.scaleXY,
+        springDamping: 0.7,
+      },
+      update: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.opacity,
+        springDamping: 0.7,
+      },
+      delete: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.scaleXY,
+        springDamping: 0.7,
+      },
+    };
+
+    // Configure and trigger the animation
+    LayoutAnimation.configureNext(
+      customAnimation,
+
+      () => {
+        // Animation completion callback
+        setIsAnimating(false);
+        // currentPosition.setValue(300); // Reset the scroll position
+        Animated.timing(currentPosition, {
+          toValue: 200,
+          useNativeDriver: false,
+          duration: 1000,
+        }).start(() => {
+          //setPreloader(false);
+        });
+      },
+      error => console.warn('Animation failed:', error),
+    );
+
+    // Update the state after configuring animation
+    setIsHeight(prevState => !prevState);
+  };
+
+  // Add scroll debouncing
+  let scrollTimeout;
+  const scrollUp = () => {
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+
+    scrollTimeout = setTimeout(() => {
+      changeDirection();
+    }, 200); // Debounce time in ms
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, []);
+
+  const shiftLeft = useAnimatedValue(0);
+
+  useEffect(() => {
+    const startScrolling = Animated.timing(shiftLeft, {
+      toValue: 1,
+      useNativeDriver: false,
+      duration: 2000,
+      delay: 500,
+    });
+
+    Animated.loop(startScrolling, {iterations: 1}).start();
+  }, [isHeight]);
+
+  const studentTexts = () => {
+    const studentMessages = [
+      '📚 ',
+      '💪 ',
+      '✨ ',
+      '🌟 ',
+      '⏰ ',
+      '🧘‍♂️ ',
+      '🌈 ',
+      '🚀 ',
+      '📖 ',
+      '🏆 ',
+    ];
+
+    const randomIndex = Math.floor(Math.random() * studentMessages.length);
+    for (let i = 0; i <= studentMessages.length; i++) {
+      return studentMessages[randomIndex];
+    }
+  };
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
+
+  const handleSearch = text => {
+    setSearchQuery(text);
+    const filtered = myProjects.filter(
+      item => item.topic.toLowerCase().includes(text.toLowerCase()),
+      // item.topic.toUpperCase().includes(text.toUpperCase())
+    );
+    setFilteredData(filtered);
+  };
+
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={[Themes.colors.red, Themes.colors.darkGray]}
-          start={{x: 0, y: 0}}
-          end={{x: 0, y: 1}}
-          style={[styles.header, {flex: 1}]}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerTop}>
-              <View>
-                <Text style={styles.greeting}>Welcome back,</Text>
-                <Text style={styles.username}>
-                  {loading ? 'Fetching' : username || 'User'}!
-                </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={scrollUp}>
+        <View>
+          <LinearGradient
+            colors={[Themes.colors.red, Themes.colors.darkGray]}
+            start={{x: 0, y: 0}}
+            end={{x: 0, y: 1}}
+            style={[styles.header, {flex: 1}]}>
+            <View style={[styles.headerContent, {position: 'relative'}]}>
+              <Animated.View
+                style={{
+                  // borderWidth: 4,
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  position: 'absolute',
+                  width: '100%',
+                  alignSelf: 'center',
+                  bottom: currentPosition,
+                }}>
+                {/* <LottieView
+                  source={require('../../assets/animations/emptyPro.json')}
+                  autoPlay
+                  loop
+                  style={{height: 80, width: 80}}
+                /> */}
+                <View
+                  style={{
+                    marginVertical: 10,
+                    flexDirection: 'row',
+                    // columnGap: 10,
+                    justifyContent: 'space-between',
+                  }}>
+                  <Animated.View
+                    style={{
+                      borderRadius: 5,
+                    }}>
+                    <Text
+                      style={{
+                        textAlign: 'center',
+                        fontSize: 16,
+                        color: Themes.colors.white,
+                        fontFamily: Themes.fonts.regular,
+                      }}>
+                      {studentTexts()} Loading
+                    </Text>
+                  </Animated.View>
+                </View>
+              </Animated.View>
+              <View style={styles.headerTop}>
+                <View>
+                  <Text style={styles.welcomeText}>Welcome back,</Text>
+                  <Text
+                    style={[
+                      styles.welcomeText,
+                      {fontSize: 20, fontFamily: Themes.fonts.medium},
+                    ]}>
+                    {loading ? 'Fetching' : username || 'User'}!
+                  </Text>
+                </View>
+
+                <View />
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  navigate('/Notifications');
-                }}
-                style={styles.notificationIcon}>
-                <NotificationIcon />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.searchContainer}>
-              <SearchIcon style={styles.searchIcon} />
-              <TextInput
-                placeholder="Search records"
-                placeholderTextColor={Themes.colors.darkGray}
-                style={styles.searchInput}
-              />
-            </View>
-          </View>
-        </LinearGradient>
-
-        <View style={styles.content}>
-          <SectionHeader title="Live Now" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.liveSessionsContainer}>
-            {[1, 2, 3].map(item => (
-              <LiveSessionCard
-                key={`live-${item}`}
-                //onPress={() => navigate('/Editor')}
-                onPress={() => {
-                  navigate('/Editor', {
-                    state: {
-                      projectTitle: item.topic,
-                      projectContent: item.description,
-                      creator_id: item.creator_id,
-                      textContent: item.content,
-                      created_at: item.created_at,
-                      comments: item.comments,
-                      creator: item.creator,
-                      creator_avatar: item.creator_avatar,
-                    },
-                  });
-                }}
-                imageUrl="https://picsum.photos/200"
-                title="Lorem ipsum dolor sit amet, consectetur adipiscing"
-                host="Dr. John Doe"
-              />
-            ))}
-          </ScrollView>
-
-          <SectionHeader title="Following" />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.liveSessionsContainer}>
-            {myFollowedProjects.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => {
-                  navigate('/Editor', {
-                    state: {
-                      projectTitle: item.topic,
-                      projectDescription: item.description,
-                      creators_id: item.creators_id,
-                      textContent: item.content,
-                      created_at: item.created_at,
-                      comments_length: item.comments_length,
-                      creators: item.creators,
-                      creators_avatar: item.creators_avatar,
-                    },
-                  });
-                }}>
-                <FollowingCard
-                  imageUrl="https://img.freepik.com/free-photo/creative-abstract-mixed-red-color-painting-with-marble-liquid-effect-panorama_1258-102944.jpg?t=st=1728311856~exp=1728315456~hmac=12abfbd2654b694eb49ed7647f64e0f5373c90941d06596d4955d38705fdd215&w=996"
-                  avatarUrl={
-                    avatar_url ||
-                    'https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?t=st=1725801336~exp=1725804936~hmac=fc526ae5173184a7d485674cf33c52bbc239a3ab707780118517f0dcc9a330c7&w=740'
-                  }
-                  title={item.topic}
-                  host={item.creators}
-                  comments={item.comments_length}
+              <View style={styles.searchContainer}>
+                <SearchIcon style={styles.searchIcon} />
+                <TextInput
+                  placeholder="Search records"
+                  placeholderTextColor={Themes.colors.darkGray}
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
                 />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <SectionHeader title="Your Projects" />
-          {myProjects.length > 0 ? (
-            myProjects.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => {
-                  navigate('/Editor', {
-                    state: {
-                      projectTitle: item.topic,
-                      projectDescription: item.description,
-                      creators_id: item.creators_id,
-                      textContent: item.content,
-                      created_at: item.created_at,
-                      comments_length: item.comments_length,
-                      creators: item.creators,
-                      creators_avatar: item.creators_avatar,
-                    },
-                  });
-                }}>
-                <ProjectCard
-                  title={item.topic}
-                  description={item.description}
-                />
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View>
-              <LottieView
-                source={require('../../assets/animations/emptyPro.json')}
-                autoPlay
-                loop
-                style={{height: 200, width: '100%'}}
-              />
+              </View>
             </View>
-          )}
+          </LinearGradient>
+        </View>
+
+        <View style={{paddingHorizontal: 10}}>
+          {filteredData.map((item, index) => {
+            return (
+              <TouchableOpacity
+                onPress={() => navigate('/Editor')}
+                key={item.id || index.toString()}
+                style={{
+                  //borderWidth: 4,
+                  width: '90%',
+                  alignSelf: 'center',
+                  marginVertical: 15,
+                  paddingVertical: 30,
+                  paddingHorizontal: 35,
+                  borderRadius: 20,
+                  shadowOffset: [{height: 0, width: 0}],
+                  elevation: 10,
+                  shadowColor: Themes.colors.darkGray,
+                  backgroundColor: Themes.colors.white,
+                }}>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    fontSize: 18,
+                    fontFamily: Themes.fonts.bold,
+                  }}>
+                  You
+                </Text>
+                <Text
+                  style={{
+                    marginVertical: 20,
+                    fontFamily: Themes.fonts.regular,
+                    fontSize: 18,
+                    color: Themes.colors.darkGray,
+                  }}>
+                  Topic: {item.topic}
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: Themes.fonts.regular,
+                    fontSize: 18,
+                  }}>
+                  {item.description}
+                </Text>
+                <Text style={{textAlign: 'right', marginTop: 10, fontSize: 15}}>
+                  🎉🎉🎉
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
+
       <CustomBottomNavigator />
     </View>
   );
 }
 
-const SectionHeader = ({title}) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <TouchableOpacity>
-      <Text style={styles.seeAllText}>See All</Text>
-    </TouchableOpacity>
-  </View>
-);
-
-const LiveSessionCard = ({onPress, imageUrl, title, host}) => (
-  <TouchableOpacity onPress={onPress} style={styles.liveSessionCard}>
-    <Image source={{uri: imageUrl}} style={styles.liveSessionImage} />
-    <LinearGradient
-      colors={[Themes.colors.red, Themes.colors.darkGray]}
-      start={{x: 0, y: 0}}
-      end={{x: 0, y: 1}}
-      style={[styles.liveSessionGradient]}>
-      <View style={styles.liveIndicator}>
-        <Text style={styles.liveText}>LIVE</Text>
-      </View>
-      <View style={styles.liveSessionInfo}>
-        <Text style={styles.liveSessionTitle}>{title}</Text>
-        <Text style={styles.liveSessionHost}>{host}</Text>
-      </View>
-    </LinearGradient>
-  </TouchableOpacity>
-);
-
-const FollowingCard = ({imageUrl, avatarUrl, title, host, comments}) => (
-  <View style={styles.followingCard}>
-    <Image source={{uri: imageUrl}} style={styles.followingImage} />
-    <View style={styles.followingGradient}>
-      <View style={styles.liveIndicator}>
-        <Text style={styles.liveText}>LIVE</Text>
-      </View>
-      <View style={styles.followingInfo}>
-        <Text style={styles.followingTitle}>{title}</Text>
-        <Text style={styles.followingHost}>{host}</Text>
-      </View>
-
-      <Image source={{uri: avatarUrl}} style={styles.avatarImage} />
-
-      <View style={styles.commentsContainer}>
-        <CommentIcon width={24} height={24} color={Themes.colors.white} />
-        <Text style={styles.commentsText}>{comments}+</Text>
-      </View>
-    </View>
-  </View>
-);
-
-const ProjectCard = ({title, description}) => (
-  <View style={styles.projectCard}>
-    <DocumentIcon />
-    <View style={styles.projectInfo}>
-      <Text style={styles.projectTitle}>{title}</Text>
-      <Text style={styles.projectDescription}>
-        {description?.length > 70
-          ? description.slice(0, 71) + '...'
-          : description}
-      </Text>
-    </View>
-    <ChevronForwardIcon />
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Themes.colors.backgroundColor,
+  },
+  welcomeText: {
+    color: Themes.colors.white,
+    fontSize: 17,
+    fontFamily: Themes.fonts.bold,
   },
   header: {
     paddingTop: 60,
@@ -479,16 +521,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  greeting: {
-    fontSize: 18,
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.regular,
-    letterSpacing: 1,
-  },
-  username: {
+  appName: {
     fontSize: 35,
     color: Themes.colors.white,
-    fontFamily: Themes.fonts.extraBold,
+    fontFamily: Themes.fonts.mediumItalic,
   },
   notificationIcon: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -513,149 +549,5 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    marginTop: 25,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    color: Themes.colors.textColor,
-    fontFamily: Themes.fonts.bold,
-  },
-  seeAllText: {
-    fontSize: 16,
-    color: Themes.colors.red,
-    fontFamily: Themes.fonts.semiBold,
-  },
-  liveSessionsContainer: {
-    marginBottom: 10,
-  },
-  liveSessionCard: {
-    width: Dimensions.get('window').width * 0.7,
-    height: 200,
-    marginRight: 15,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  liveSessionImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  liveSessionGradient: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  liveIndicator: {
-    alignSelf: 'flex-start',
-    backgroundColor: Themes.colors.white,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  liveText: {
-    color: Themes.colors.red,
-    fontSize: 12,
-    fontFamily: Themes.fonts.semiBold,
-  },
-  liveSessionInfo: {
-    justifyContent: 'flex-end',
-  },
-  liveSessionTitle: {
-    fontSize: 20,
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.semiBold,
-    marginBottom: 5,
-  },
-  liveSessionHost: {
-    fontSize: 14,
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.regular,
-  },
-  followingCard: {
-    width: Dimensions.get('window').width * 0.7,
-    height: 250,
-    marginRight: 15,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  followingImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  followingGradient: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    padding: 10,
-  },
-  avatarImage: {
-    height: 40,
-    width: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: Themes.colors.white,
-    alignSelf: 'flex-end',
-  },
-  followingInfo: {
-    justifyContent: 'flex-end',
-  },
-  followingTitle: {
-    fontSize: 20,
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.semiBold,
-    marginBottom: 5,
-  },
-  followingHost: {
-    fontSize: 14,
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.regular,
-  },
-  commentsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 5,
-  },
-  commentsText: {
-    color: Themes.colors.white,
-    fontFamily: Themes.fonts.regular,
-    fontSize: 16,
-    marginLeft: 5,
-  },
-  projectCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Themes.colors.white,
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  projectInfo: {
-    flex: 1,
-    marginLeft: 15,
-    marginRight: 10,
-    paddingVertical: 15,
-  },
-  projectTitle: {
-    fontSize: 18,
-    color: Themes.colors.darkGray,
-    fontFamily: Themes.fonts.semiBold,
-    marginBottom: 5,
-  },
-  projectDescription: {
-    fontSize: 16,
-    color: Themes.colors.darkGray,
-    fontFamily: Themes.fonts.regular,
   },
 });

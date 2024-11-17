@@ -10,6 +10,9 @@ import {
   Modal,
   Platform,
   StatusBar,
+  LayoutAnimation,
+  Animated,
+  TextInput,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {AppContext} from '../Components/GlobalVariables';
@@ -27,6 +30,7 @@ import Svg, {
 } from 'react-native-svg';
 import CustomBottomNavigator from '../Components/CustomBottomTab';
 import {useNavigate} from 'react-router-native';
+import Toast from 'react-native-root-toast';
 
 const ChevronForwardIcon = () => (
   <Svg
@@ -182,6 +186,36 @@ const ChangeProfileIcon = () => (
   </Svg>
 );
 
+const XMarkIcon = ({size = 24, color = 'black'}) => {
+  return (
+    <Svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg">
+      <Line
+        x1="3"
+        y1="3"
+        x2="21"
+        y2="21"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <Line
+        x1="21"
+        y1="3"
+        x2="3"
+        y2="21"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+};
+
 const ProfileOption = ({icon, title, subtitle, onPress}) => (
   <TouchableOpacity
     style={[styles.option, {marginVertical: 5}]}
@@ -198,7 +232,142 @@ const ProfileOption = ({icon, title, subtitle, onPress}) => (
 export default function Profile() {
   const navigate = useNavigate();
 
-  const {userInfo} = useContext(AppContext);
+  const {userInfo, userUID, reload} = useContext(AppContext);
+
+  const [username, setUsername] = useState('');
+  const [image, setImage] = useState(null);
+  const [fullName, setFullName] = useState('');
+  const [allProjectsLength, setAllProjectsLength] = useState(0);
+  // const [requests, setRequests] = useState('');
+
+  useEffect(() => {
+    const retrieveData = async () => {
+      try {
+        // Fetch the user's profile from the "profiles" table
+        const {data, error, status} = await supabase
+          .from('profiles')
+          .select(`*`)
+          .eq('id', userUID)
+          .single();
+
+        if (error && status !== 406) {
+          throw error;
+        }
+
+        if (data) {
+          setImage(data.avatar_url);
+          setFullName(data.full_name);
+          setUsername(data.username);
+        }
+      } catch (error) {
+        console.log(error.message); // Catch and set the error
+      }
+    };
+
+    const retrieveProjects = async () => {
+      try {
+        // Fetch the user's profile from the "profiles" table
+        const {data, error, status} = await supabase
+          .from('projects_info')
+          .select(`*`)
+          .eq('creator_id', userUID);
+
+        if (error && status !== 406) {
+          throw error;
+        }
+
+        if (data) {
+          setAllProjectsLength(data.length);
+        }
+      } catch (error) {
+        console.log(error.message); // Catch and set the error
+      }
+    };
+
+    retrieveData();
+    retrieveProjects();
+    //retrieveRequests();
+  }, [reload]);
+
+  const [changePassword, setChangePassword] = useState(false);
+
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const changeDirection = () => {
+    if (isAnimating) return;
+
+    setIsAnimating(true);
+    const customAnimation = {
+      duration: 1000,
+      create: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.scaleXY,
+        springDamping: 0.7,
+      },
+      update: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.opacity,
+        springDamping: 0.7,
+      },
+      delete: {
+        type: LayoutAnimation.Types.spring,
+        property: LayoutAnimation.Properties.scaleXY,
+        springDamping: 0.7,
+      },
+    };
+
+    // Configure and trigger the animation
+    LayoutAnimation.configureNext(
+      customAnimation,
+
+      () => {
+        // Animation completion callback
+        setIsAnimating(false);
+        // currentPosition.setValue(300); // Reset the scroll position
+      },
+      error => console.warn('Animation failed:', error),
+    );
+
+    // Update the state after configuring animation
+    setChangePassword(!changePassword);
+  };
+
+  // Add scroll debouncing
+  let scrollTimeout;
+  const handleHeight = () => {
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+    }
+
+    scrollTimeout = setTimeout(() => {
+      changeDirection();
+    }, 200); // Debounce time in ms
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout);
+      }
+    };
+  }, []);
+
+  const [changedPasword, setChangedPassword] = useState('');
+
+  async function updatePassword(newPassword) {
+    const {data, error} = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      console.error('Error updating password:', error.message);
+    } else {
+      //console.log('Password updated successfully:', data);
+    }
+    setChangedPassword('');
+    setChangePassword(false);
+  }
 
   return (
     <View style={styles.container}>
@@ -206,29 +375,31 @@ export default function Profile() {
         <LinearGradient
           colors={[Themes.colors.red, Themes.colors.darkGray]}
           start={{x: 0, y: 0}}
-          end={{x: 0, y: 1}}
-          style={styles.profileInfo}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{
-                uri:
-                  userInfo.avatar_url ||
-                  'https://img.freepik.com/free-photo/photo-glad-joyful-dark-skinned-girl-gestures-with-one-hand_273609-28027.jpg?t=st=1728215420~exp=1728219020~hmac=6134abbc3e7d1d1950287dc596510fd5b6916d22afb5ce124ad4d10ab025298a&w=740',
-              }}
-              style={styles.profileImage}></Image>
-            <Text style={styles.name}>{userInfo.full_name}</Text>
-            <Text style={styles.username}>@{userInfo.username}</Text>
+          end={{x: 0, y: 1}}>
+          <View style={styles.profileInfo}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={{
+                  uri:
+                    image ||
+                    'https://img.freepik.com/free-photo/photo-glad-joyful-dark-skinned-girl-gestures-with-one-hand_273609-28027.jpg?t=st=1728215420~exp=1728219020~hmac=6134abbc3e7d1d1950287dc596510fd5b6916d22afb5ce124ad4d10ab025298a&w=740',
+                }}
+                style={styles.profileImage}
+              />
+              <Text style={styles.name}>{fullName || 'loading'}</Text>
+              <Text style={styles.username}>@{username || 'username'}</Text>
+            </View>
           </View>
         </LinearGradient>
         <View style={styles.projectInfo}>
           <View>
-            <Text style={styles.projectText}>25</Text>
+            <Text style={styles.projectText}>{allProjectsLength}</Text>
             <Text style={styles.projectSub}>Projects</Text>
           </View>
-          <View>
+          {/* <View>
             <Text style={styles.projectText}>5</Text>
             <Text style={styles.projectSub}>Completed</Text>
-          </View>
+          </View> */}
         </View>
         <View style={styles.optionsContainer}>
           <ProfileOption
@@ -236,47 +407,97 @@ export default function Profile() {
             title="Edit profile"
             subtitle="Change profile"
             onPress={() => {
-              //  navigation.navigate('Advanced');
+              navigate('/EditProfile');
             }}
           />
-          <ProfileOption
-            icon={<QuestionCircleIcon />}
-            title="Project Requests"
-            subtitle="Manage your project requests"
-            onPress={() => {
-              navigate('Advanced');
-            }}
-          />
-          <ProfileOption
-            icon={<PeopleIcon />}
-            title="Refer A Friend"
-            subtitle="Invite friends to join"
-            onPress={() => {
-              /* Handle press */
-            }}
-          />
-          <ProfileOption
-            icon={<AccountCancelIcon />}
-            title="Blocked Requests"
-            subtitle="Manage blocked requests"
-            onPress={() => {
-              /* Handle press */
-            }}
-          />
+
           <ProfileOption
             icon={<LockClosedIcon />}
             title="Change Password"
             subtitle="Update your password"
             onPress={() => {
               /* Handle press */
+              handleHeight();
             }}
           />
+          <Animated.View
+            style={{
+              height: changePassword ? 'auto' : 0,
+            }}>
+            {changePassword && (
+              <View
+                style={{
+                  //backgroundColor: Themes.colors.white,
+                  //borderBottomWidth: 1,
+                  width: '90%',
+                  alignSelf: 'center',
+                  borderTopWidth: 1,
+                }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginHorizontal: 10,
+                    marginVertical: 5,
+                  }}>
+                  <Text
+                    style={{
+                      //textAlign: 'center',
+                      fontFamily: Themes.fonts.regular,
+                      fontSize: 17,
+                      //marginLeft: 10,
+                    }}>
+                    Change Password
+                  </Text>
+                  <TouchableOpacity onPress={handleHeight}>
+                    <XMarkIcon />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  placeholder="Enter New Password"
+                  secureTextEntry
+                  onChangeText={inp => setChangedPassword(inp.trim())}
+                  style={{
+                    padding: 12,
+                    fontFamily: Themes.fonts.regular,
+                    fontSize: 18,
+                    color: Themes.colors.darkGray,
+                    borderBottomWidth: 1,
+                    marginBottom: 10,
+                  }}
+                />
+                <TouchableOpacity
+                  onPress={() => updatePassword(changedPasword)}
+                  style={{
+                    width: '40%',
+                    alignSelf: 'center',
+                    backgroundColor: Themes.colors.darkGray,
+                    borderRadius: 10,
+                  }}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontFamily: Themes.fonts.bold,
+                      color: Themes.colors.white,
+                      marginVertical: 10,
+                      fontSize: 16,
+                    }}>
+                    Save
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Animated.View>
         </View>
 
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={() => {
             /* Handle logout */
+            supabase.auth.signOut().then(() => {
+              navigate('/Login');
+            });
           }}>
           <Text style={styles.logoutText}>Log Out</Text>
           <LogoutIcon />

@@ -1,16 +1,17 @@
-import { createContext, useState } from "react";
-import { Themes } from "./Themes";
+import {createContext, useState} from 'react';
+import {Themes} from './Themes';
 
 const AppContext = createContext();
 
-function AppProvider({ children }) {
-  const [email, setEmail] = useState("");
+function AppProvider({children}) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState(undefined);
   const [preloader, setPreloader] = useState(false);
-  const [userUID, setUserUID] = useState("");
-  const [userInfo, setUserInfo] = useState("");
-  const [groupInfo, setGroupInfo] = useState("");
+  const [userUID, setUserUID] = useState('');
+  const [userInfo, setUserInfo] = useState('');
+  const [groupInfo, setGroupInfo] = useState('');
   const [reload, setReload] = useState(0);
+  const [noteeInfo, setNoteeInfo] = useState('');
 
   return (
     <AppContext.Provider
@@ -29,11 +30,12 @@ function AppProvider({ children }) {
         setGroupInfo,
         reload,
         setReload,
-      }}
-    >
+        noteeInfo,
+        setNoteeInfo,
+      }}>
       {children}
     </AppContext.Provider>
   );
 }
 
-export { AppContext, AppProvider };
+export {AppContext, AppProvider};

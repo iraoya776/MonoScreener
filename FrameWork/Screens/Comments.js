@@ -13,7 +13,11 @@ import {useLocation, useNavigate} from 'react-router-native';
 import Svg, {Path} from 'react-native-svg';
 import LinearGradient from 'react-native-linear-gradient';
 import {supabase} from '../Supabase/supabase';
-import notifee, {AndroidImportance, AndroidStyle} from '@notifee/react-native';
+import notifee, {
+  AndroidImportance,
+  AndroidStyle,
+  AuthorizationStatus,
+} from '@notifee/react-native';
 import {AppContext} from '../Components/GlobalVariables';
 import {Themes} from '../Components/Themes';
 
@@ -62,7 +66,7 @@ export default function Comments() {
   const [comments, setComments] = useState('');
   const location = useLocation();
   const [commentList, setCommentList] = useState([]);
-  const {projectTitle, doc_id} = location.state || {};
+  const {projectTitle, doc_id, creators_id} = location.state || {};
 
   useEffect(() => {
     fetchComments();
@@ -85,13 +89,17 @@ export default function Comments() {
     setCommentList(prevComments => {
       const exists = prevComments.some(comment => comment.id === newComment.id);
       if (!exists) {
-        if (newComment.creator_id !== userUID) {
-          onDisplayNotification(newComment);
+        // (newComment.creator_id !== userUID)
+        if ((newComment.creator_id !== userUID) === true) {
+          //onDisplayNotification(newComment);
         }
         return [newComment, ...prevComments];
       }
       return prevComments;
     });
+    //setNoteeInfo(newComment);
+
+    //console.log((newComment.creator_id !== userUID) === false);
   };
 
   async function fetchComments() {
@@ -117,19 +125,20 @@ export default function Comments() {
 
     const {error} = await supabase.from('comments').insert({
       creator_id: userUID,
-      updated_at: new Date().toLocaleTimeString(),
+      updated_at: new Date().toLocaleString(),
       creator_avatar: userInfo.avatar_url,
       creator: userInfo.full_name,
       message: comments.trim(),
       replies_length: 0,
       doc_id: doc_id,
+      topic_creators: creators_id,
     });
 
     if (error) {
       console.error('Error adding comment:', error);
     } else {
       setComments('');
-      await updateNotification();
+      //await updateNotification();
     }
   }
 
@@ -141,37 +150,10 @@ export default function Comments() {
       read: false,
       avatar_url: userInfo.avatar_url,
       time_posted: new Date().toLocaleTimeString(),
+      creators_id,
     });
-
     if (error) {
       console.error('Error updating notification:', error);
-    }
-  }
-
-  async function onDisplayNotification(comment) {
-    try {
-      await notifee.requestPermission();
-      const channelId = await notifee.createChannel({
-        id: 'default',
-        name: 'Default Channel',
-        importance: AndroidImportance.HIGH,
-      });
-
-      await notifee.displayNotification({
-        title: `New comment from ${comment.creator}`,
-        body: comment.message,
-        android: {
-          channelId,
-          smallIcon: 'ic_notification',
-          style: {type: AndroidStyle.BIGTEXT, text: comment.message},
-          pressAction: {id: 'default', launchActivity: 'default'},
-          showTimestamp: true,
-          colorized: true,
-          color: 'white',
-        },
-      });
-    } catch (error) {
-      console.error('Error displaying notification:', error);
     }
   }
 

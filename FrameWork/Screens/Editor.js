@@ -111,7 +111,7 @@ const JoinCallIcon = () => (
 );
 
 const AdvancedTextEditor = () => {
-  const {preloader, setPreloader} = useContext(AppContext);
+  const {preloader, setPreloader, userUID} = useContext(AppContext);
 
   const location = useLocation();
   const {
@@ -123,8 +123,11 @@ const AdvancedTextEditor = () => {
     comments_length,
     creators,
     creators_avatar,
+    project_id,
+    creator_id,
   } = location.state || {};
 
+  // console.log(creators_id.includes(userUID));
   const navigate = useNavigate();
 
   const [content, setContent] = useState([{type: 'text', value: ''}]);
@@ -167,28 +170,6 @@ const AdvancedTextEditor = () => {
     },
     [selection, formattedRanges],
   );
-
-  const pickImage = async () => {
-    try {
-      const image = await ImagePicker.openPicker({
-        width: 300,
-        height: 400,
-        cropping: true,
-        mediaType: 'photo',
-      });
-      if (image) {
-        const newImage = image.path;
-        setContent([
-          ...content,
-          {type: 'image', uri: newImage},
-          {type: 'text', value: ''},
-        ]);
-      }
-    } catch (error) {
-      console.log('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
-  };
 
   const renderFormattedText = text => {
     let lastIndex = 0;
@@ -423,12 +404,11 @@ const AdvancedTextEditor = () => {
         <View style={styles.firstView}>
           <View
             style={{flexDirection: 'row', alignItems: 'center', columnGap: 10}}>
-            <LeftArrowIcon size={30} color={Themes.colors.white} />
+            <TouchableOpacity onPress={() => navigate(-1)}>
+              <LeftArrowIcon size={30} color={Themes.colors.white} />
+            </TouchableOpacity>
             <Text style={styles.firstText}>Editor</Text>
           </View>
-          <TouchableOpacity>
-            <SendRequestIcon />
-          </TouchableOpacity>
         </View>
         <ScrollView
           style={styles.editorContainer}
@@ -482,9 +462,7 @@ const AdvancedTextEditor = () => {
             <TouchableOpacity style={styles.button} onPress={clearFormatting}>
               <IconSvg name="clear" size={20} color={Themes.colors.darkGray} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={pickImage}>
-              <Text style={styles.buttonText}>Pick Image</Text>
-            </TouchableOpacity>
+
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
               <TouchableOpacity
                 style={[styles.button, {marginRight: 0}]}
@@ -520,42 +498,21 @@ const AdvancedTextEditor = () => {
           </ScrollView>
         </View>
         <View style={styles.actionBar}>
-          <TouchableOpacity>
+          {/* <TouchableOpacity>
             <View>
               <JoinCallIcon />
               <Text style={styles.actionText}>Join</Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => {
-              navigate('/Comments', {
-                state: {
-                  projectTitle,
-                  creators_id,
-                  doc_id: created_at,
-                  comments_length: commentList.length,
-                },
-              });
-            }}>
-            <View style={styles.commentContainer}>
-              <IconSvg
-                name="comments"
-                size={30}
-                color={Themes.colors.darkGray}
-              />
-              <Text style={[styles.commentLength]}>{commentList.length}</Text>
-            </View>
-            <Text style={styles.actionText}>Comment</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+
           <TouchableOpacity style={styles.actionButton} onPress={generatePDF}>
             <IconSvg name="upload" size={30} color={Themes.colors.darkGray} />
             <Text style={styles.actionText}>Publish</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          {/* <TouchableOpacity style={styles.actionButton}>
             <IconSvg name="split" size={30} color={Themes.colors.darkGray} />
             <Text style={styles.actionText}>Split</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
     </RootSiblingParent>
