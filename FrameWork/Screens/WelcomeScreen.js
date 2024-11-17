@@ -167,7 +167,7 @@ export default function WelcomeScreen() {
                 ],
               },
             ]}>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => navigate('Login')}
               style={styles.lastTouch}>
               <FontAwesomeIcon
@@ -176,16 +176,11 @@ export default function WelcomeScreen() {
                 color={Themes.colors.white}
               />
               <Text style={styles.lastTxt}>Continue with Google</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity
-              onPress={() => navigate('/Web')}
-              style={[
-                styles.lastTouch,
-                {marginTop: 10, backgroundColor: Themes.colors.backgroundColor},
-              ]}>
-              <Text style={[styles.lastTxt, {color: Themes.colors.red}]}>
-                Continue Anyway
-              </Text>
+              onPress={() => navigate('/Login')}
+              style={[styles.lastTouch]}>
+              <Text style={[styles.lastTxt]}>Continue Anyway</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -282,7 +277,7 @@ const styles = StyleSheet.create({
   },
   lastTxt: {
     fontSize: 18,
-    fontFamily: 'PlayfairDisplay-ExtraBold',
+    fontFamily: Themes.fonts.regular,
     color: Themes.colors.white,
   },
 });

@@ -2,28 +2,59 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from 'react-native';
-import {Themes} from '../Components/Themes';
 import {useNavigate} from 'react-router-native';
-import {useContext, useEffect, useState} from 'react';
+import {useContext, useState} from 'react';
 import {supabase} from '../Supabase/supabase';
 import {AppContext} from '../Components/GlobalVariables';
-import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
+import {Themes} from '../Components/Themes';
+import Svg, {Path} from 'react-native-svg';
+
+// SVG Icons Components
+const EmailIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z"
+      fill={Themes.colors.darkGray}
+    />
+  </Svg>
+);
+
+const LockIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z"
+      fill={Themes.colors.darkGray}
+    />
+  </Svg>
+);
+
+const EyeIcon = ({show}) => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d={
+        show
+          ? 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z'
+          : 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z'
+      }
+      fill={Themes.colors.darkGray}
+    />
+  </Svg>
+);
 
 export default function Login() {
   const navigate = useNavigate();
   const {userUID, setUserUID, setPreloader} = useContext(AppContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(true);
 
   const passwordValidation = () => {
     if (password.length === 0) {
@@ -57,7 +88,7 @@ export default function Login() {
     }
   };
 
-  const [showPassword, setShowPassword] = useState(true);
+  // const [showPassword, setShowPassword] = useState(true);
 
   // async function loginUser() {
   //   let {data, error} = await supabase.auth.signInWithPassword({
@@ -104,179 +135,187 @@ export default function Login() {
   }
 
   return (
-    <ScrollView>
-      <View style={[styles.container]}>
-        <View>
-          <View>
-            <Text style={styles.firstTxt}>Login</Text>
-            <Text style={styles.firstTxt}>to Your Account!</Text>
-          </View>
-          <View style={styles.inpView}>
-            <Text style={styles.inpText}>Email</Text>
-            <TextInput
-              style={styles.input}
-              autoCapitalize="none"
-              placeholder="owen@gmail.com"
-              autoComplete="email"
-              inputMode="email"
-              numberOfLines={2}
-              multiline={true}
-              onChangeText={inp => setEmail(inp.trim())}
-              value={email}></TextInput>
-            <Text
-              style={{
-                display: emailValidation() ? 'flex' : 'none',
-                color: Themes.colors.red,
-                //fontFamily: Themes.fonts.text600,
-                fontSize: 17,
-              }}>
-              {emailValidation()}
-            </Text>
-          </View>
-          <View style={[styles.inpView, {marginTop: 5}]}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-              <Text style={styles.inpText}>Password</Text>
-              {/* <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  // <Entypo
-                  //   name="eye-with-line"
-                  //   size={25}
-                  //   color={Themes.colors.blue}
-                  // />
-                ) : (
-                  // <Entypo name="eye" size={25} color={Themes.colors.blue} />
-                )}
-              </TouchableOpacity> */}
+    <ScrollView style={styles.scrollView}>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Welcome Back!</Text>
+          <Text style={styles.headerSubtitle}>
+            Login to continue your journey
+          </Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <View style={styles.inputContainer}>
+            <View style={styles.iconContainer}>
+              <EmailIcon />
             </View>
             <TextInput
               style={styles.input}
-              placeholder="password"
-              //numberOfLines={2}
+              placeholder="Email"
+              placeholderTextColor={Themes.colors.darkGray}
+              autoCapitalize="none"
+              autoComplete="email"
+              inputMode="email"
+              onChangeText={inp => setEmail(inp.trim())}
+              value={email}
+            />
+          </View>
+          {emailValidation() && (
+            <Text style={styles.errorText}>{emailValidation()}</Text>
+          )}
+
+          <View style={styles.inputContainer}>
+            <View style={styles.iconContainer}>
+              <LockIcon />
+            </View>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor={Themes.colors.darkGray}
               secureTextEntry={showPassword}
-              //multiline={true}
               onChangeText={inp => setPassword(inp.trim())}
               value={password}
-              maxLength={30}></TextInput>
-            <Text
-              style={{
-                display: passwordValidation() ? 'flex' : 'none',
-                color: Themes.colors.red,
-                //fontFamily: Themes.fonts.text600,
-                fontSize: 17,
-              }}>
-              {passwordValidation()}
-            </Text>
+              maxLength={30}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}>
+              <EyeIcon show={!showPassword} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.fgtPassword}>
-            <Text style={styles.fgtText}>Forgot Password</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={loginUser} style={styles.login}>
-            <Text style={styles.lgnText}>Login</Text>
-          </TouchableOpacity>
-        </View>
+          {passwordValidation() && (
+            <Text style={styles.errorText}>{passwordValidation()}</Text>
+          )}
+          {/* 
+          <TouchableOpacity style={styles.forgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity> */}
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            columnGap: 5,
-            justifyContent: 'center',
-            marginVertical: 20,
-          }}>
-          <Text
-            style={{
-              color: Themes.colors.textColor,
-              //fontFamily: Themes.fonts.text600,
-              fontSize: 18,
-            }}>
-            Don't have an account?
-          </Text>
-          <TouchableOpacity
-            onPress={() => navigate('/SignUp')}
-            style={styles.signup}>
-            <Text style={styles.txtSignup}>Sign-Up</Text>
+          <TouchableOpacity style={styles.loginButton} onPress={loginUser}>
+            <Text style={styles.loginButtonText}>Login</Text>
           </TouchableOpacity>
+
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don't have an account?</Text>
+            <TouchableOpacity onPress={() => navigate('/SignUp')}>
+              <Text style={styles.signupLink}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
       <KeyboardAvoidingView
-        keyboardVerticalOffset={0}
-        behavior={
-          Platform.OS === 'android' ? 'position' : 'height'
-        }></KeyboardAvoidingView>
+        behavior={Platform.OS === 'android' ? 'height' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : null,
-    padding: 10,
     backgroundColor: Themes.colors.backgroundColor,
   },
+  container: {
+    //flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 40 : 60,
+    paddingHorizontal: 10,
+  },
+  headerContainer: {
+    marginBottom: 40,
+  },
+  headerTitle: {
+    fontSize: 42,
+    fontFamily: Themes.fonts.extraBold,
+    color: Themes.colors.textColor,
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: Themes.colors.darkGray,
+    fontFamily: Themes.fonts.regular,
+  },
+  formContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: 15,
+    paddingVertical: 50,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F6FA',
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E1E1E1',
+  },
+  iconContainer: {
+    padding: 12,
+    opacity: 0.7,
+  },
   input: {
-    padding: 15,
-    fontSize: 20,
-    //fontFamily: Themes.fonts.text700,
-    color: Themes.colors.textColor,
-  },
-  inpView: {
-    marginVertical: 15,
-    backgroundColor: Themes.colors.white,
-    borderRadius: 15,
-    padding: 15,
-    shadowOffset: {height: 2, width: 2},
-    shadowColor: Themes.colors.darkGray,
-    shadowOpacity: 1,
-    elevation: 20,
-    marginTop: 30,
-  },
-  inpText: {
+    flex: 1,
     fontSize: 18,
-    color: Themes.colors.textColor,
-    //fontFamily: Themes.fonts.text500,
+    color: Themes.colors.darkGray,
+    paddingVertical: 18,
+    fontFamily: Themes.fonts.regular,
   },
-  login: {
-    backgroundColor: Themes.colors.darkGray,
-    padding: 10,
-    borderRadius: 40,
-    marginTop: 30,
+  eyeIcon: {
+    padding: 12,
   },
-  lgnText: {
-    textAlign: 'center',
-    color: Themes.colors.brightCoral,
-    fontSize: 23,
-    //fontFamily: Themes.fonts.text400,
-  },
-  signup: {
-    width: 100,
-    padding: 5,
-  },
-  txtSignup: {
-    fontSize: 20,
-    //fontFamily: Themes.fonts.text900,
-    color: Themes.colors.textColor,
-  },
-  firstTxt: {
-    fontSize: 40,
-    //fontFamily: Themes.fonts.text900,
-    color: Themes.colors.textColor,
-    textShadowColor: Themes.colors.textColor,
-    textShadowOffset: {width: 0, height: 0},
-    textShadowRadius: 5,
-  },
-  fgtPassword: {
-    width: '50%',
-    margin: 5,
-  },
-  fgtText: {
-    //fontFamily: Themes.fonts.text600,
-    fontSize: 20,
+  errorText: {
     color: Themes.colors.red,
+    fontSize: 14,
+    marginTop: -8,
+    marginBottom: 16,
+    marginLeft: 4,
+    fontFamily: Themes.fonts.medium,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24,
+    //marginTop: 10,
+    fontFamily: Themes.fonts.regular,
+  },
+  forgotPasswordText: {
+    color: Themes.colors.red,
+    fontSize: 14,
+  },
+  loginButton: {
+    backgroundColor: Themes.colors.darkGray,
+    borderRadius: 40,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  loginButtonText: {
+    color: Themes.colors.white,
+    fontSize: 18,
+    fontFamily: Themes.fonts.extraBold,
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  signupText: {
+    color: Themes.colors.darkGray,
+    fontSize: 16,
+    fontFamily: Themes.fonts.bold,
+  },
+  signupLink: {
+    color: Themes.colors.textColor,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
